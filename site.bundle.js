@@ -3,7 +3,14 @@ var d3 = require('d3'),
     browse = require('./')(d3),
     token = localStorage.github_token;
 
+    /*
 d3.select('.browser').call(browse.gistBrowse(token)
+    .on('chosen', function() {
+        console.log('chosen', arguments);
+    }));
+    */
+
+d3.select('.repos').call(browse.gitHubBrowse(token)
     .on('chosen', function() {
         console.log('chosen', arguments);
     }));
@@ -8831,6 +8838,152 @@ module.exports = function(d3) {
 
     function gitHubBrowse(d3) {
         return function(token) {
+            var event = d3.dispatch('chosen');
+
+            function browse(selection) {
+                var wrap = selection.append('div')
+                    .attr('class', 'miller-wrap');
+
+                req('/user/repos', token, function(err, repos) {
+                    var repocolumn = selection.append('div')
+                        .attr('class', 'miller-column root')
+                        .attr('data-level', 0);
+                     var repoItems = repocolumn.selectAll('div.item')
+                        .data(repos)
+                        .enter()
+                        .append('div')
+                        .attr('class', 'item pad1')
+                        .text(function(d) {
+                            return d.name;
+                        })
+                        .on('click', repositoryRoot);
+
+                    function cleanup(level) {
+                        selection.selectAll('.miller-column').each(function() {
+                            if (+d3.select(this).attr('data-level') >= level) {
+                                d3.select(this).remove();
+                            }
+                        });
+                    }
+
+                    function repositoryRoot(d) {
+                        var that = this;
+
+                        repoItems.classed('active', function() {
+                            return this == that;
+                        });
+
+                        req('/repos/' + [
+                            d.owner.login,
+                            d.name,
+                            'branches',
+                            d.default_branch
+                        ].join('/'), token, onBranch);
+
+                        function onBranch(err, branch) {
+                            req('/repos/' + [
+                                d.owner.login,
+                                d.name,
+                                'git',
+                                'trees',
+                                branch.commit.sha
+                            ].join('/'), token, onItems(d));
+                        }
+
+                        function onItems(parent) {
+                            return function(err, items) {
+                                cleanup(1);
+
+                                var rootColumn = selection.append('div')
+                                    .attr('class', 'miller-column repo-root')
+                                    .attr('data-level', 1);
+
+                                items.tree = items.tree.map(function(t) {
+                                    t.parent = parent;
+                                    return t;
+                                });
+
+                                var columnItems = rootColumn.selectAll('div.item')
+                                    .data(items.tree)
+                                    .enter()
+                                    .append('div')
+                                    .attr('class', function(d) {
+                                        return 'item pad1 ' + d.type;
+                                    })
+                                    .text(function(d) {
+                                        return d.path;
+                                    });
+
+                                columnItems.each(function(d) {
+                                    if (d.type == 'tree') {
+                                        d3.select(this)
+                                            .on('click', repositoryTree(columnItems, 2));
+                                    } else {
+                                        d3.select(this)
+                                            .on('click', event.chosen);
+
+                                    }
+                                });
+                            };
+                        }
+
+                        function repositoryTree(columnItems, level) {
+                            return function(d) {
+                                var that = this;
+
+                                columnItems.classed('active', function() {
+                                    return this == that;
+                                });
+
+                                req('/repos/' + [
+                                    d.parent.owner.login,
+                                    d.parent.name,
+                                    'git',
+                                    'trees',
+                                    d.sha
+                                ].join('/'), token, onSubItems(d.parent));
+
+                                function onSubItems(parent) {
+                                    return function(err, items) {
+
+                                        console.log('cleanup', level);
+                                        cleanup(level);
+
+                                        var rootColumn = selection.append('div')
+                                            .attr('class', 'miller-column repo-subcolumn')
+                                            .attr('data-level', level);
+
+                                        items.tree = items.tree.map(function(t) {
+                                            t.parent = parent;
+                                            return t;
+                                        });
+
+                                        var columnItems = rootColumn.selectAll('div.item')
+                                            .data(items.tree)
+                                            .enter()
+                                            .append('div')
+                                            .attr('class', 'item pad1')
+                                            .text(function(d) {
+                                                return d.path;
+                                            });
+
+                                        columnItems.each(function(d) {
+                                            if (d.type == 'tree') {
+                                                d3.select(this).on('click', repositoryTree(columnItems, level + 1));
+                                            } else {
+                                                d3.select(this)
+                                                    .on('click', event.chosen);
+                                            }
+                                        });
+                                    };
+                                }
+                            };
+                        }
+                    }
+                });
+            }
+
+            return d3.rebind(browse, event, 'on');
         };
     }
 
@@ -8910,7 +9063,7 @@ module.exports = function(d3) {
     }
 
     return {
-        gitHubBrowser: gitHubBrowse(d3),
+        gitHubBrowse: gitHubBrowse(d3),
         gistBrowse: gistBrowse(d3)
     };
 };

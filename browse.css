@@ -15,7 +15,7 @@
     border:1px solid #777;
 }
 
-.item .overlay {
+.browser .item .overlay {
     position:absolute;
     top:0;
     left:0;
@@ -29,11 +29,41 @@
     transition:all 100ms ease-in;
 }
 
-.item:hover .overlay {
+.browser .item:hover .overlay {
     background:rgba(255, 255, 255, 0.9);
 }
 
 .static-map-preview canvas,
 .static-map-preview img {
     position:absolute;
+}
+
+/* repos */
+.miller-wrap {
+    overflow:auto;
+    white-space:nowrap;
+}
+
+.miller-column {
+    min-width:150px;
+    display:inline-block;
+    border-right:1px solid #ccc;
+    border-left:1px solid #ccc;
+    vertical-align:top;
+}
+
+.miller-column .item {
+    border-bottom:1px solid #ccc;
+    -webkit-transition:all 100ms ease-in;
+    transition:all 100ms ease-in;
+    cursor:pointer;
+}
+
+.miller-column .item:hover,
+.miller-column .item.active {
+    background:#eee;
+}
+
+.miller-column .item.tree {
+    background:#F3FCFF;
 }
