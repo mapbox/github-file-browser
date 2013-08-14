@@ -45,11 +45,10 @@
 }
 
 .miller-column {
-    min-width:150px;
-    display:inline-block;
+    width:200px;
     border-right:1px solid #ccc;
-    border-left:1px solid #ccc;
-    vertical-align:top;
+    float:left;
+    overflow-x:scroll;
 }
 
 .miller-column .item {
@@ -57,6 +56,15 @@
     -webkit-transition:all 100ms ease-in;
     transition:all 100ms ease-in;
     cursor:pointer;
+    line-height:35px;
+    font-size:12px;
+    padding:0 10px;
+    box-sizing:border-box;
+    height:35px;
+}
+
+.miller-column .item:last-child {
+    border:none;
 }
 
 .miller-column .item:hover,
@@ -66,4 +74,8 @@
 
 .miller-column .item.tree {
     background:#F3FCFF;
+}
+
+.miller-outer {
+    overflow:auto;
 }

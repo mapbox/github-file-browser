@@ -8841,29 +8841,51 @@ module.exports = function(d3) {
             var event = d3.dispatch('chosen');
 
             function browse(selection) {
-                var wrap = selection.append('div')
+                var outer = selection.append('div')
+                    .attr('class', 'miller-outer');
+
+                var wrap = outer.append('div')
                     .attr('class', 'miller-wrap');
 
                 req('/user/repos', token, function(err, repos) {
-                    var repocolumn = selection.append('div')
+
+                    var repocolumn = wrap.append('div')
                         .attr('class', 'miller-column root')
                         .attr('data-level', 0);
+
                      var repoItems = repocolumn.selectAll('div.item')
                         .data(repos)
                         .enter()
                         .append('div')
-                        .attr('class', 'item pad1')
+                        .attr('class', 'item')
                         .text(function(d) {
                             return d.name;
                         })
                         .on('click', repositoryRoot);
 
+                    metaResize();
+
                     function cleanup(level) {
-                        selection.selectAll('.miller-column').each(function() {
+                        wrap.selectAll('.miller-column').each(function() {
                             if (+d3.select(this).attr('data-level') >= level) {
                                 d3.select(this).remove();
                             }
                         });
+                    }
+
+                    function metaResize() {
+                        wrap.style('width', function() {
+                            return (selection.selectAll('.miller-column')[0].length * 200) + 'px';
+                        });
+                        wrap.selectAll('.miller-column')
+                            .style('height', function() {
+                                var max = 0;
+                                selection.selectAll('.miller-column').each(function() {
+                                    var children = d3.select(this).selectAll('div.item')[0].length;
+                                    if (children > max) max = children;
+                                });
+                                return (max * 35) + 'px';
+                            });
                     }
 
                     function repositoryRoot(d) {
@@ -8894,7 +8916,7 @@ module.exports = function(d3) {
                             return function(err, items) {
                                 cleanup(1);
 
-                                var rootColumn = selection.append('div')
+                                var rootColumn = wrap.append('div')
                                     .attr('class', 'miller-column repo-root')
                                     .attr('data-level', 1);
 
@@ -8924,6 +8946,8 @@ module.exports = function(d3) {
 
                                     }
                                 });
+
+                                metaResize();
                             };
                         }
 
@@ -8946,10 +8970,9 @@ module.exports = function(d3) {
                                 function onSubItems(parent) {
                                     return function(err, items) {
 
-                                        console.log('cleanup', level);
                                         cleanup(level);
 
-                                        var rootColumn = selection.append('div')
+                                        var rootColumn = wrap.append('div')
                                             .attr('class', 'miller-column repo-subcolumn')
                                             .attr('data-level', level);
 
@@ -8975,6 +8998,8 @@ module.exports = function(d3) {
                                                     .on('click', event.chosen);
                                             }
                                         });
+
+                                        metaResize();
                                     };
                                 }
                             };
