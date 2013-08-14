@@ -1,0 +1,26 @@
+.browser .item {
+    border-bottom:1px solid #ccc;
+    transition:all 100ms ease-in;
+    -webkit-transition:all 100ms ease-in;
+}
+
+.browser .item:hover {
+    background:#efefef;
+}
+
+.browser {
+    white-space:no-wrap;
+}
+
+.browser div {
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    overflow:hidden;
+}
+
+.browser .item strong {
+}
+
+.browser .item:last-child {
+    border:0;
+}
