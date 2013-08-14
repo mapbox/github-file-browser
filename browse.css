@@ -1,26 +1,39 @@
 .browser .item {
-    border-bottom:1px solid #ccc;
     transition:all 100ms ease-in;
+    margin-right:5px;
+    margin-bottom:5px;
     -webkit-transition:all 100ms ease-in;
+    cursor:pointer;
+    border:1px solid #eee;
+    width:202px;
+    height:202px;
+    box-sizing:border-box;
+    position:relative;
 }
 
 .browser .item:hover {
-    background:#efefef;
+    border:1px solid #777;
 }
 
-.browser {
-    white-space:no-wrap;
-}
-
-.browser div {
+.item .overlay {
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    padding:5px;
     text-overflow:ellipsis;
     white-space:nowrap;
     overflow:hidden;
+    background:rgba(255, 255, 255, 0.1);
+    -webkit-transition:all 100ms ease-in;
+    transition:all 100ms ease-in;
 }
 
-.browser .item strong {
+.item:hover .overlay {
+    background:rgba(255, 255, 255, 0.9);
 }
 
-.browser .item:last-child {
-    border:0;
+.static-map-preview canvas,
+.static-map-preview img {
+    position:absolute;
 }

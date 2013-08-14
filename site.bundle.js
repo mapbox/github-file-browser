@@ -8,96 +8,7 @@ d3.select('.browser').call(browse.gistBrowse(token)
         console.log('chosen', arguments);
     }));
 
-},{"./":2,"d3":3}],2:[function(require,module,exports){
-module.exports = function(d3) {
-    var base = 'https://api.github.com';
-
-    function authorize(xhr, token) {
-        return token ?
-            xhr.header('Authorization', 'token ' + token) :
-            xhr;
-    }
-
-    function req(postfix, token, callback) {
-        authorize(d3.json(base + postfix), token)
-            .on('load', function(data) {
-                callback(null, data);
-            })
-            .on('error', function(error) {
-                callback(error, null);
-            })
-            .get();
-    }
-
-    function gitHubBrowse(d3) {
-        return function(token) {
-        };
-    }
-
-    function gistBrowse(d3) {
-        return function(token) {
-            var event = d3.dispatch('chosen');
-            var time_format = d3.time.format('%Y/%m/%d');
-            function browse(selection) {
-                req('/gists', token, function(err, gists) {
-                    var enter = selection.selectAll('div.gist')
-                        .data(gists)
-                        .enter()
-                        .append('div')
-                        .attr('class', 'fl item pad1 clearfix col12');
-
-                    enter
-                        .append('div')
-                        .attr('class', 'col2')
-                        .append('strong')
-                        .text(function(d) {
-                            return d.id;
-                        });
-
-                    enter
-                        .append('div')
-                        .attr('class', 'col4')
-                        .text(function(d) {
-                            return (d.description || '-') + ' ';
-                        });
-
-                    enter
-                        .append('div')
-                        .attr('class', 'col4')
-                        .selectAll('span')
-                        .data(function(d) {
-                            return d3.entries(d.files);
-                        })
-                        .enter()
-                        .append('span')
-                        .attr('class', 'deemphasize')
-                        .text(function(d) {
-                            return d.key + ' ';
-                        })
-                        .attr('title', function(d) {
-                            return d.value.type + ', ' + d.value.size + ' bytes';
-                        });
-
-                    enter
-                        .append('div')
-                        .attr('class', 'col2 deemphasize')
-                        .text(function(d) {
-                            return time_format(new Date(d.updated_at));
-                        });
-
-                });
-            }
-            return d3.rebind(browse, event, 'on');
-        };
-    }
-
-    return {
-        gitHubBrowser: gitHubBrowse(d3),
-        gistBrowse: gistBrowse(d3)
-    };
-};
-
-},{}],3:[function(require,module,exports){
+},{"d3":2,"./":3}],2:[function(require,module,exports){
 (function(){require("./d3");
 module.exports = d3;
 (function () { delete this.d3; })(); // unset global
@@ -8914,5 +8825,190 @@ d3 = function() {
   });
   return d3;
 }();
+},{}],3:[function(require,module,exports){
+module.exports = function(d3) {
+    var preview = require('static-map-preview')(d3, 'tmcw.map-dsejpecw');
+
+    function gitHubBrowse(d3) {
+        return function(token) {
+        };
+    }
+
+    function gistBrowse(d3) {
+        return function(token) {
+            var event = d3.dispatch('chosen');
+            var time_format = d3.time.format('%Y/%m/%d');
+            function browse(selection) {
+                req('/gists', token, function(err, gists) {
+                    gists = gists.filter(hasMapFile);
+                    var item = selection.selectAll('div.item')
+                        .data(gists)
+                        .enter()
+                        .append('div')
+                        .attr('class', 'fl item')
+                        .on('click', function(d) {
+                            event.chosen(d);
+                        });
+
+                    item.append('div')
+                        .attr('class', 'map-preview')
+                        .call(mapPreview(token));
+
+                    var overlay = item.append('div')
+                        .attr('class', 'overlay')
+                        .text(function(d) {
+                            return d.id + ' / ' + d.description + ' edited at ' + time_format(new Date(d.updated_at));
+                        });
+
+                    overlay.append('div')
+                        .attr('class', 'files')
+                        .selectAll('small')
+                        .data(function(d) {
+                            return d3.entries(d.files);
+                        })
+                        .enter()
+                        .append('small')
+                        .attr('class', 'deemphasize')
+                        .text(function(d) {
+                            return d.key + ' ';
+                        })
+                        .attr('title', function(d) {
+                            return d.value.type + ', ' + d.value.size + ' bytes';
+                        });
+                });
+            }
+            return d3.rebind(browse, event, 'on');
+        };
+    }
+
+    var base = 'https://api.github.com';
+
+    function req(postfix, token, callback) {
+        authorize(d3.json(base + postfix), token)
+            .on('load', function(data) {
+                callback(null, data);
+            })
+            .on('error', function(error) {
+                callback(error, null);
+            })
+            .get();
+    }
+
+    function mapPreview(token) {
+        return function(selection) {
+            selection.each(function(d) {
+                var sel = d3.select(this);
+                req('/gists/' + d.id, token, function(err, data) {
+                    var geojson = mapFile(data);
+                    if (geojson) {
+                        var previewMap = preview(geojson, [200, 200]);
+                        sel.node().appendChild(previewMap.node());
+                    }
+                });
+            });
+        };
+    }
+
+    return {
+        gitHubBrowser: gitHubBrowse(d3),
+        gistBrowse: gistBrowse(d3)
+    };
+};
+
+function authorize(xhr, token) {
+    return token ?
+        xhr.header('Authorization', 'token ' + token) :
+        xhr;
+}
+
+function hasMapFile(data) {
+    for (var f in data.files) {
+        if (f.match(/\.geojson$/)) return true;
+    }
+}
+
+function mapFile(data) {
+    try {
+        for (var f in data.files) {
+            if (f.match(/\.geojson$/)) return JSON.parse(data.files[f].content);
+        }
+    } catch(e) {
+        return null;
+    }
+}
+
+},{"static-map-preview":5}],5:[function(require,module,exports){
+var scaleCanvas = require('autoscale-canvas');
+
+module.exports = function(d3, mapid) {
+    var ratio = window.devicePixelRatio || 1,
+        retina = ratio !== 1,
+        projection = d3.geo.mercator().precision(0),
+        path = d3.geo.path().projection(projection);
+
+    function staticUrl(cz, wh) {
+        var size = retina ? [wh[0] * 2, wh[1] * 2] : wh;
+        return 'http://a.tiles.mapbox.com/v3/' + [
+            mapid, cz.join(','), size.join('x')].join('/') + '.png';
+    }
+
+    return function(geojson, wh) {
+        projection.translate([wh[0]/2, wh[1]/2]);
+
+        var container = d3.select(document.createElement('div'))
+            .attr('class', 'static-map-preview'),
+            image = container.append('img'),
+            canvas = container.append('canvas'),
+            z = 19;
+
+        canvas.attr('width', wh[0]).attr('height', wh[1]);
+        image.attr('width', wh[0]).attr('height', wh[1]);
+        projection.center(projection.invert(path.centroid(geojson)));
+        projection.scale((1 << z) / 2 / Math.PI);
+
+        var bounds = path.bounds(geojson);
+
+        while (bounds[1][0] - bounds[0][0] > wh[0] ||
+            bounds[1][1] - bounds[0][1] > wh[1]) {
+            projection.scale((1 << z) / 2 / Math.PI);
+            bounds = path.bounds(geojson);
+            z--;
+        }
+        image.attr('src', staticUrl(projection.center().concat([z-6]), wh));
+
+        var ctx = scaleCanvas(canvas.node()).getContext('2d'),
+            painter = path.context(ctx);
+
+        ctx.strokeStyle = '#E000F5';
+        ctx.lineWidth = 2;
+        painter(geojson);
+        ctx.stroke();
+
+        return container;
+    };
+};
+
+},{"autoscale-canvas":6}],6:[function(require,module,exports){
+
+/**
+ * Retina-enable the given `canvas`.
+ *
+ * @param {Canvas} canvas
+ * @return {Canvas}
+ * @api public
+ */
+
+module.exports = function(canvas){
+  var ctx = canvas.getContext('2d');
+  var ratio = window.devicePixelRatio || 1;
+  if (1 != ratio) {
+    canvas.style.width = canvas.width + 'px';
+    canvas.style.height = canvas.height + 'px';
+    canvas.width *= ratio;
+    canvas.height *= ratio;
+    ctx.scale(ratio, ratio);
+  }
+  return canvas;
+};
 },{}]},{},[1])
 ;

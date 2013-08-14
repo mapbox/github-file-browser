@@ -1,22 +1,5 @@
 module.exports = function(d3) {
-    var base = 'https://api.github.com';
-
-    function authorize(xhr, token) {
-        return token ?
-            xhr.header('Authorization', 'token ' + token) :
-            xhr;
-    }
-
-    function req(postfix, token, callback) {
-        authorize(d3.json(base + postfix), token)
-            .on('load', function(data) {
-                callback(null, data);
-            })
-            .on('error', function(error) {
-                callback(error, null);
-            })
-            .get();
-    }
+    var preview = require('static-map-preview')(d3, 'tmcw.map-dsejpecw');
 
     function gitHubBrowse(d3) {
         return function(token) {
@@ -29,36 +12,34 @@ module.exports = function(d3) {
             var time_format = d3.time.format('%Y/%m/%d');
             function browse(selection) {
                 req('/gists', token, function(err, gists) {
-                    var enter = selection.selectAll('div.gist')
+                    gists = gists.filter(hasMapFile);
+                    var item = selection.selectAll('div.item')
                         .data(gists)
                         .enter()
                         .append('div')
-                        .attr('class', 'fl item pad1 clearfix col12');
-
-                    enter
-                        .append('div')
-                        .attr('class', 'col2')
-                        .append('strong')
-                        .text(function(d) {
-                            return d.id;
+                        .attr('class', 'fl item')
+                        .on('click', function(d) {
+                            event.chosen(d);
                         });
 
-                    enter
-                        .append('div')
-                        .attr('class', 'col4')
+                    item.append('div')
+                        .attr('class', 'map-preview')
+                        .call(mapPreview(token));
+
+                    var overlay = item.append('div')
+                        .attr('class', 'overlay')
                         .text(function(d) {
-                            return (d.description || '-') + ' ';
+                            return d.id + ' / ' + d.description + ' edited at ' + time_format(new Date(d.updated_at));
                         });
 
-                    enter
-                        .append('div')
-                        .attr('class', 'col4')
-                        .selectAll('span')
+                    overlay.append('div')
+                        .attr('class', 'files')
+                        .selectAll('small')
                         .data(function(d) {
                             return d3.entries(d.files);
                         })
                         .enter()
-                        .append('span')
+                        .append('small')
                         .attr('class', 'deemphasize')
                         .text(function(d) {
                             return d.key + ' ';
@@ -66,17 +47,37 @@ module.exports = function(d3) {
                         .attr('title', function(d) {
                             return d.value.type + ', ' + d.value.size + ' bytes';
                         });
-
-                    enter
-                        .append('div')
-                        .attr('class', 'col2 deemphasize')
-                        .text(function(d) {
-                            return time_format(new Date(d.updated_at));
-                        });
-
                 });
             }
             return d3.rebind(browse, event, 'on');
+        };
+    }
+
+    var base = 'https://api.github.com';
+
+    function req(postfix, token, callback) {
+        authorize(d3.json(base + postfix), token)
+            .on('load', function(data) {
+                callback(null, data);
+            })
+            .on('error', function(error) {
+                callback(error, null);
+            })
+            .get();
+    }
+
+    function mapPreview(token) {
+        return function(selection) {
+            selection.each(function(d) {
+                var sel = d3.select(this);
+                req('/gists/' + d.id, token, function(err, data) {
+                    var geojson = mapFile(data);
+                    if (geojson) {
+                        var previewMap = preview(geojson, [200, 200]);
+                        sel.node().appendChild(previewMap.node());
+                    }
+                });
+            });
         };
     }
 
@@ -85,3 +86,25 @@ module.exports = function(d3) {
         gistBrowse: gistBrowse(d3)
     };
 };
+
+function authorize(xhr, token) {
+    return token ?
+        xhr.header('Authorization', 'token ' + token) :
+        xhr;
+}
+
+function hasMapFile(data) {
+    for (var f in data.files) {
+        if (f.match(/\.geojson$/)) return true;
+    }
+}
+
+function mapFile(data) {
+    try {
+        for (var f in data.files) {
+            if (f.match(/\.geojson$/)) return JSON.parse(data.files[f].content);
+        }
+    } catch(e) {
+        return null;
+    }
+}
