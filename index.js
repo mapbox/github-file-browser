@@ -226,13 +226,14 @@ module.exports = function(d3) {
 
     var base = 'https://api.github.com';
 
-    function req(postfix, token, callback, l, url) {
+    function req(postfix, token, callback, l, url, count) {
         l = l || [];
+        count = count || 0;
         authorize(d3.xhr(url || (base + postfix)), token)
             .on('load', function(data) {
                 l = l.concat(data.list);
-                if (data.next) {
-                    return req(postfix, token, callback, l, data.next);
+                if (data.next && ++count < 8) {
+                    return req(postfix, token, callback, l, data.next, count);
                 }
                 callback(null, l);
             })
