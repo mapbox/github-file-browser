@@ -12,7 +12,7 @@ module.exports = function(d3) {
                 var wrap = outer.append('div')
                     .attr('class', 'miller-wrap');
 
-                req('/user/repos', token, function(err, repos) {
+                reqList('/user/repos', token, function(err, repos) {
 
                     var repocolumn = wrap.append('div')
                         .attr('class', 'miller-column root')
@@ -226,7 +226,7 @@ module.exports = function(d3) {
 
     var base = 'https://api.github.com';
 
-    function req(postfix, token, callback, l, url, count) {
+    function reqList(postfix, token, callback, l, url, count) {
         l = l || [];
         count = count || 0;
         authorize(d3.xhr(url || (base + postfix)), token)
@@ -247,6 +247,17 @@ module.exports = function(d3) {
                     list: JSON.parse(request.responseText),
                     next: nextLink
                 };
+            })
+            .get();
+    }
+
+    function req(postfix, token, callback) {
+        authorize(d3.json((base + postfix)), token)
+            .on('load', function(data) {
+                callback(null, data);
+            })
+            .on('error', function(error) {
+                callback(error, null);
             })
             .get();
     }
