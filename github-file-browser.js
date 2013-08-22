@@ -228,13 +228,26 @@ module.exports = function(d3) {
 
     var base = 'https://api.github.com';
 
-    function req(postfix, token, callback) {
-        authorize(d3.json(base + postfix), token)
+    function req(postfix, token, callback, l, url) {
+        l = l || [];
+        authorize(d3.xhr(url || (base + postfix)), token)
             .on('load', function(data) {
-                callback(null, data);
+                l = l.concat(data.list);
+                if (data.next) {
+                    return req(postfix, token, callback, l, data.next);
+                }
+                callback(null, l);
             })
             .on('error', function(error) {
                 callback(error, null);
+            })
+            .response(function(request) {
+                var nextLink = (request.getResponseHeader('Link') || '').match(/\<([^\>]+)\>\; rel="next"/);
+                nextLink = nextLink ? nextLink[1] : null;
+                return {
+                    list: JSON.parse(request.responseText),
+                    next: nextLink
+                };
             })
             .get();
     }
