@@ -145,6 +145,7 @@ module.exports = function(d3) {
 
                                         items.tree = items.tree.map(function(t) {
                                             t.parent = parent;
+                                            t.parents = parents;
                                             return t;
                                         });
 
@@ -271,7 +272,6 @@ module.exports = function(d3) {
                 var sel = d3.select(this);
                 req('/gists/' + d.id, token, function(err, data) {
                     var geojson = mapFile(data);
-                    console.log(geojson);
                     if (geojson) {
                         var previewMap = preview(geojson, [200, 200]);
                         sel.node().appendChild(previewMap.node());
@@ -314,9 +314,7 @@ var scaleCanvas = require('autoscale-canvas');
 
 module.exports = function(d3, mapid) {
     var ratio = window.devicePixelRatio || 1,
-        retina = ratio !== 1,
-        projection = d3.geo.mercator().precision(0),
-        path = d3.geo.path().projection(projection);
+        retina = ratio !== 1;
 
     function staticUrl(cz, wh) {
         var size = retina ? [wh[0] * 2, wh[1] * 2] : wh;
@@ -325,13 +323,17 @@ module.exports = function(d3, mapid) {
     }
 
     return function(geojson, wh) {
-        projection.translate([wh[0]/2, wh[1]/2]);
+        var projection = d3.geo.mercator()
+            .precision(0)
+            .translate([wh[0]/2, wh[1]/2]);
+
+        path = d3.geo.path().projection(projection);
 
         var container = d3.select(document.createElement('div'))
             .attr('class', 'static-map-preview'),
-            image = container.append('img'),
-            canvas = container.append('canvas'),
-            z = 19;
+        image = container.append('img'),
+        canvas = container.append('canvas'),
+        z = 19;
 
         canvas.attr('width', wh[0]).attr('height', wh[1]);
         image.attr('width', wh[0]).attr('height', wh[1]);
@@ -341,15 +343,15 @@ module.exports = function(d3, mapid) {
         var bounds = path.bounds(geojson);
 
         while (bounds[1][0] - bounds[0][0] > wh[0] ||
-            bounds[1][1] - bounds[0][1] > wh[1]) {
+               bounds[1][1] - bounds[0][1] > wh[1]) {
             projection.scale((1 << z) / 2 / Math.PI);
             bounds = path.bounds(geojson);
             z--;
         }
-        image.attr('src', staticUrl(projection.center().concat([z-6]), wh));
+        image.attr('src', staticUrl(projection.center().concat([z-6]).map(filterNan), wh));
 
         var ctx = scaleCanvas(canvas.node()).getContext('2d'),
-            painter = path.context(ctx);
+        painter = path.context(ctx);
 
         ctx.strokeStyle = '#E000F5';
         ctx.lineWidth = 2;
@@ -358,6 +360,8 @@ module.exports = function(d3, mapid) {
 
         return container;
     };
+
+    function filterNan(_) { return isNaN(_) ? 0 : _; }
 };
 
 },{"autoscale-canvas":3}],3:[function(require,module,exports){
