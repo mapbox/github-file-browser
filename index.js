@@ -104,7 +104,7 @@ module.exports = function(d3) {
                                 columnItems.each(function(d) {
                                     if (d.type == 'tree') {
                                         d3.select(this)
-                                            .on('click', repositoryTree(columnItems, 2));
+                                            .on('click', repositoryTree(columnItems, 2, [d]));
                                     } else {
                                         d3.select(this)
                                             .on('click', event.chosen);
@@ -116,7 +116,7 @@ module.exports = function(d3) {
                             };
                         }
 
-                        function repositoryTree(columnItems, level) {
+                        function repositoryTree(columnItems, level, parents) {
                             return function(d) {
                                 var that = this;
 
@@ -143,6 +143,7 @@ module.exports = function(d3) {
 
                                         items.tree = items.tree.map(function(t) {
                                             t.parent = parent;
+                                            t.parents = parents;
                                             return t;
                                         });
 
@@ -157,7 +158,8 @@ module.exports = function(d3) {
 
                                         columnItems.each(function(d) {
                                             if (d.type == 'tree') {
-                                                d3.select(this).on('click', repositoryTree(columnItems, level + 1));
+                                                d3.select(this).on('click', repositoryTree(columnItems, level + 1,
+                                                    parents.concat([d])));
                                             } else {
                                                 d3.select(this)
                                                     .on('click', event.chosen);
@@ -182,7 +184,7 @@ module.exports = function(d3) {
             var event = d3.dispatch('chosen');
             var time_format = d3.time.format('%Y/%m/%d');
             function browse(selection) {
-                req('/gists', token, function(err, gists) {
+                reqList('/gists', token, function(err, gists) {
                     gists = gists.filter(hasMapFile);
                     var item = selection.selectAll('div.item')
                         .data(gists)
