@@ -293,7 +293,7 @@ module.exports = function(d3) {
             .on('load', function(data) {
                 l = l.concat(data.list);
                 if (data.next && ++count < 8) {
-                    return req(postfix, token, callback, l, data.next, count);
+                    return reqList(postfix, token, callback, l, data.next, count);
                 }
                 callback(null, l);
             })
