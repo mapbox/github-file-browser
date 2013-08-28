@@ -156,7 +156,7 @@ module.exports = function(d3) {
                                         columnItems.each(function(d) {
                                             if (d.type == 'tree') {
                                                 d3.select(this)
-                                                    .on('click', repositoryTree(columnItems, 2, [d]));
+                                                    .on('click', repositoryTree(columnItems, repoLevel + 1, [d]));
                                             } else {
                                                 d3.select(this)
                                                     .on('click', event.chosen);
