@@ -185,7 +185,7 @@ module.exports = function(d3) {
             var event = d3.dispatch('chosen');
             var time_format = d3.time.format('%Y/%m/%d');
             function browse(selection) {
-                var width = Math.min(1024, selection.node().offsetWidth);
+                var width = Math.min(640, selection.node().offsetWidth);
                 req('/gists', token, function(err, gists) {
                     gists = gists.filter(hasMapFile);
                     var item = selection.selectAll('div.item')
@@ -197,10 +197,7 @@ module.exports = function(d3) {
                         .style('height', 200 + 'px')
                         .on('click', function(d) {
                             event.chosen(d);
-                        });
-
-                    item.append('div')
-                        .attr('class', 'map-preview')
+                        })
                         .call(mapPreview(token, width));
 
                     var overlay = item.append('div')
@@ -288,8 +285,12 @@ module.exports = function(d3) {
                 req('/gists/' + d.id, token, function(err, data) {
                     var geojson = mapFile(data);
                     if (geojson) {
-                        var previewMap = preview(geojson, [width, 200]);
-                        sel.node().appendChild(previewMap.node());
+                        preview(geojson, [width, 200], function(err, res) {
+                            if (err) return;
+                            sel
+                                .style('background-image', 'url(' + res + ')')
+                                .style('background-size', width + 'px 200px');
+                        });
                     }
                 });
             });
