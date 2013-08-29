@@ -6,229 +6,103 @@ module.exports = function(d3) {
             var event = d3.dispatch('chosen');
 
             function browse(selection) {
-                var outer = selection.append('div')
-                    .attr('class', 'miller-outer');
+                req('/user', token, onuser);
 
-                var wrap = outer.append('div')
-                    .attr('class', 'miller-wrap');
-
-                req('/user', token, function(err, user) {
-
+                function onuser(err, user) {
                     reqList('/user/orgs', token, function(err, orgs) {
-                        var rootLevel = 0;
-
-                        var orgColumn = wrap.append('div')
-                            .attr('class', 'miller-column root')
-                            .attr('data-level', rootLevel);
-
-                        var orgItems;
-
+                        var base = [user];
                         if (orgs && orgs.length) {
-                            orgs.unshift(user);
-
-                            orgItems = orgColumn.selectAll('div.item')
-                                .data(orgs)
-                                .enter()
-                                .append('div')
-                                .attr('class', 'item')
-                                .text(function(d) {
-                                    return d.login;
-                                })
-                                .on('click', organizationRoot(
-                                    rootLevel + 1,
-                                    d3.selection()
-                                ));
-
-                            metaResize();
-                        } else {
-                          organizationRoot(rootLevel)(user);
+                            base = base.concat(orgs);
                         }
-
-                        function cleanup(level) {
-                            wrap.selectAll('.miller-column').each(function() {
-                                if (+d3.select(this).attr('data-level') >= level) {
-                                    d3.select(this).remove();
-                                }
-                            });
-                        }
-
-                        function metaResize() {
-                            wrap.style('width', function() {
-                                return (selection.selectAll('.miller-column')[0].length * 200) + 'px';
-                            });
-                            wrap.selectAll('.miller-column')
-                                .style('height', function() {
-                                    var max = 0;
-                                    selection.selectAll('.miller-column').each(function() {
-                                        var children = d3.select(this).selectAll('div.item')[0].length;
-                                        if (children > max) max = children;
-                                    });
-                                    return (max * 35) + 'px';
-                                });
-                        }
-
-                        function organizationRoot(orgLevel, orgItems) {
-                            return function(d) {
-                                cleanup(orgLevel);
-
-                                var that = this;
-
-                                if (orgItems && orgItems.length) {
-                                  orgItems.classed('active', function() {
-                                      return this == that;
-                                  });
-                                }
-
-                                var url = d.type && d.type === 'User' ?
-                                    '/user/repos' : '/orgs/' + d.login + '/repos';
-
-                                reqList(url, token, function(err, repos) {
-
-                                    var repoColumn = wrap.append('div')
-                                        .attr('class', 'miller-column root')
-                                        .attr('data-level', orgLevel);
-
-                                     var repoItems = repoColumn.selectAll('div.item')
-                                        .data(repos)
-                                        .enter()
-                                        .append('div')
-                                        .attr('class', 'item')
-                                        .text(function(d) {
-                                            return d.name;
-                                        })
-                                        .on('click', repositoryRoot(orgLevel + 1, d3.selection()));
-
-                                    metaResize();
-                                });
-                            }
-                        }
-
-                        function repositoryRoot(repoLevel, repoItems) {
-                            return function(d) {
-                                var that = this;
-
-                                repoItems.classed('active', function() {
-                                    return this == that;
-                                });
-
-                                req('/repos/' + [
-                                    d.owner.login,
-                                    d.name,
-                                    'branches',
-                                    d.default_branch
-                                ].join('/'), token, onBranch);
-
-                                function onBranch(err, branch) {
-                                    req('/repos/' + [
-                                        d.owner.login,
-                                        d.name,
-                                        'git',
-                                        'trees',
-                                        branch.commit.sha
-                                    ].join('/'), token, onItems(d));
-                                }
-
-                                function onItems(parent) {
-                                    return function(err, items) {
-                                        cleanup(repoLevel);
-
-                                        var rootColumn = wrap.append('div')
-                                            .attr('class', 'miller-column repo-root')
-                                            .attr('data-level', repoLevel);
-
-                                        items.tree = items.tree.map(function(t) {
-                                            t.parent = parent;
-                                            return t;
-                                        });
-
-                                        var columnItems = rootColumn.selectAll('div.item')
-                                            .data(items.tree)
-                                            .enter()
-                                            .append('div')
-                                            .attr('class', function(d) {
-                                                return 'item pad1 ' + d.type;
-                                            })
-                                            .text(function(d) {
-                                                return d.path;
-                                            });
-
-                                        columnItems.each(function(d) {
-                                            if (d.type == 'tree') {
-                                                d3.select(this)
-                                                    .on('click', repositoryTree(columnItems, repoLevel + 1, [d]));
-                                            } else {
-                                                d3.select(this)
-                                                    .on('click', event.chosen);
-
-                                            }
-                                        });
-
-                                        metaResize();
-                                    };
-                                }
-
-                                function repositoryTree(columnItems, level, parents) {
-                                    return function(d) {
-                                        var that = this;
-
-                                        columnItems.classed('active', function() {
-                                            return this == that;
-                                        });
-
-                                        req('/repos/' + [
-                                            d.parent.owner.login,
-                                            d.parent.name,
-                                            'git',
-                                            'trees',
-                                            d.sha
-                                        ].join('/'), token, onSubItems(d.parent));
-
-                                        function onSubItems(parent) {
-                                            return function(err, items) {
-
-                                                cleanup(level);
-
-                                                var rootColumn = wrap.append('div')
-                                                    .attr('class', 'miller-column repo-subcolumn')
-                                                    .attr('data-level', level);
-
-                                                items.tree = items.tree.map(function(t) {
-                                                    t.parent = parent;
-                                                    t.parents = parents;
-                                                    return t;
-                                                });
-
-                                                var columnItems = rootColumn.selectAll('div.item')
-                                                    .data(items.tree)
-                                                    .enter()
-                                                    .append('div')
-                                                    .attr('class', 'item pad1')
-                                                    .text(function(d) {
-                                                        return d.path;
-                                                    });
-
-                                                columnItems.each(function(d) {
-                                                    if (d.type == 'tree') {
-                                                        d3.select(this).on('click', repositoryTree(columnItems, level + 1,
-                                                            parents.concat([d])));
-                                                    } else {
-                                                        d3.select(this)
-                                                            .on('click', event.chosen);
-                                                    }
-                                                });
-
-                                                metaResize();
-                                            };
-                                        }
-                                    };
-                                }
-
-                        }
-
-                        }
+                        render({
+                            columns: [base],
+                            path: [{name:'Users & Organizations'}]
+                        });
                     });
+                }
 
-                });
+                function navigateTo(d, data) {
+                    var url;
+                    if (d.type && d.type === 'User') {
+                        // user
+                        url = '/user/repos';
+                    } else if (d.login) {
+                        // organization
+                        url = '/orgs/' + d.login + '/repos';
+                    } else if (d.forks) {
+                        // repository
+                        url = '/repos/' + d.full_name + '/branches';
+                    } else if (d.name && d.commit) {
+                        // branch
+                        url = '/repos/' + data.path[data.path.length - 1].full_name + '/git/trees/' + d.commit.sha;
+                    }
+                    reqList(url, token, onlist);
+                    function onlist(err, repos) {
+                        if (repos.length === 1 && repos[0].tree) repos = repos[0].tree;
+                        data.path.push(d);
+                        data.columns = data.columns.concat([repos]);
+                        render(data);
+                    }
+                }
+
+                var header = selection.append('div')
+                    .attr('class', 'header');
+
+                var breadcrumbs = header.append('div')
+                    .attr('class', 'breadcrumbs');
+
+                function render(data) {
+
+                    var crumbs = breadcrumbs
+                        .selectAll('a')
+                        .data(data.path);
+
+                    crumbs.exit().remove();
+
+                    crumbs.enter()
+                        .append('a')
+                        .text(name)
+                        .on('click', function(d, i) {
+                            for (var j = 0; j < (data.path.length - i); j++) {
+                                data.path.pop();
+                                data.columns.pop();
+                            }
+                            render(data);
+                        });
+
+                    var columns = selection
+                        .selectAll('div.column')
+                        .data(data.columns);
+
+                    columns.exit().remove();
+                    columns
+                        .enter()
+                        .append('div')
+                        .attr('class', 'column');
+
+                    columns
+                        .style('transform', transformX)
+                        .style('-webkit-transform', transformX);
+
+                    function transformX(d, i) {
+                        return 'translateX(' + (i - data.columns.length + 1) * this.offsetWidth + 'px)';
+                    }
+
+                    var items = columns
+                        .selectAll('a.item')
+                        .data(function(d) { return d; });
+                    items.exit().remove();
+                    items.enter()
+                        .append('a')
+                        .attr('class', 'item')
+                        .text(name)
+                        .on('click', function(d) {
+                            navigateTo(d, data);
+                        });
+                }
+                function name(d) {
+                    return d.login || d.name || d.path;
+                }
             }
 
             return d3.rebind(browse, event, 'on');
@@ -240,28 +114,32 @@ module.exports = function(d3) {
             var event = d3.dispatch('chosen');
             var time_format = d3.time.format('%Y/%m/%d');
             function browse(selection) {
-                reqList('/gists', token, function(err, gists) {
+                var width = Math.min(1024, selection.node().offsetWidth);
+                req('/gists', token, function(err, gists) {
                     gists = gists.filter(hasMapFile);
                     var item = selection.selectAll('div.item')
                         .data(gists)
                         .enter()
                         .append('div')
                         .attr('class', 'fl item')
+                        .style('width', width + 'px')
+                        .style('height', 200 + 'px')
                         .on('click', function(d) {
                             event.chosen(d);
                         });
 
                     item.append('div')
                         .attr('class', 'map-preview')
-                        .call(mapPreview(token));
+                        .call(mapPreview(token, width));
 
                     var overlay = item.append('div')
                         .attr('class', 'overlay')
                         .text(function(d) {
-                            return d.id + ' / ' + d.description + ' edited at ' + time_format(new Date(d.updated_at));
+                            return d.id + ' | ' + d.description +
+                                ' | ' + time_format(new Date(d.updated_at));
                         });
 
-                    overlay.append('div')
+                    overlay.append('span')
                         .attr('class', 'files')
                         .selectAll('small')
                         .data(function(d) {
@@ -320,14 +198,14 @@ module.exports = function(d3) {
             .get();
     }
 
-    function mapPreview(token) {
+    function mapPreview(token, width) {
         return function(selection) {
             selection.each(function(d) {
                 var sel = d3.select(this);
                 req('/gists/' + d.id, token, function(err, data) {
                     var geojson = mapFile(data);
                     if (geojson) {
-                        var previewMap = preview(geojson, [200, 200]);
+                        var previewMap = preview(geojson, [width, 200]);
                         sel.node().appendChild(previewMap.node());
                     }
                 });
