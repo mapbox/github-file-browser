@@ -150,11 +150,16 @@ module.exports = function(d3) {
                                 return sel.select('.preview').remove();
                             }
                             var mapcontainer = sel.append('div').attr('class', 'preview');
-                            console.log(d, data.path[2].full_name);
                             reqRaw('/repos/' + data.path[2].full_name + '/git/blobs/' + d.sha, token, onfile);
                             function onfile(err, res) {
-                                var previewMap = preview(res, [mapcontainer.node().offsetWidth, 150]);
-                                mapcontainer.node().appendChild(previewMap.node());
+                                preview(res, [mapcontainer.node().offsetWidth, 150], function(err, uri) {
+                                    console.log(arguments);
+                                    if (err) return;
+                                    mapcontainer.append('img')
+                                        .attr('width', mapcontainer.node().offsetWidth + 'px')
+                                        .attr('height', '150px')
+                                        .attr('src', uri);
+                                });
                             }
                         };
                     }
@@ -332,21 +337,18 @@ module.exports = function(d3, mapid) {
             mapid, cz.join(','), size.join('x')].join('/') + '.png';
     }
 
-    return function(geojson, wh) {
+    return function(geojson, wh, callback) {
         var projection = d3.geo.mercator()
             .precision(0)
             .translate([wh[0]/2, wh[1]/2]);
 
         path = d3.geo.path().projection(projection);
 
-        var container = d3.select(document.createElement('div'))
-            .attr('class', 'static-map-preview'),
-        image = container.append('img'),
-        canvas = container.append('canvas'),
-        z = 19;
+        var image = d3.select(document.createElement('img')),
+            canvas = d3.select(document.createElement('canvas')),
+            z = 19;
 
         canvas.attr('width', wh[0]).attr('height', wh[1]);
-        image.attr('width', wh[0]).attr('height', wh[1]);
         projection.center(projection.invert(path.centroid(geojson)));
         projection.scale((1 << z) / 2 / Math.PI);
 
@@ -358,17 +360,29 @@ module.exports = function(d3, mapid) {
             bounds = path.bounds(geojson);
             z--;
         }
-        image.attr('src', staticUrl(projection.center().concat([z-6]).map(filterNan), wh));
 
         var ctx = scaleCanvas(canvas.node()).getContext('2d'),
         painter = path.context(ctx);
 
         ctx.strokeStyle = '#E000F5';
         ctx.lineWidth = 2;
-        painter(geojson);
-        ctx.stroke();
 
-        return container;
+        image.node().crossOrigin = '*';
+        image
+            .on('load', imageload)
+            .on('error', imageerror)
+            .attr('src', staticUrl(projection.center().concat([z-6]).map(filterNan), wh));
+
+        function imageload() {
+            ctx.drawImage(this, 0, 0);
+            painter(geojson);
+            ctx.stroke();
+            callback(null, canvas.node().toDataURL());
+        }
+
+        function imageerror(err) {
+            callback(err);
+        }
     };
 
     function filterNan(_) { return isNaN(_) ? 0 : _; }
