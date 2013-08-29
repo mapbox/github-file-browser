@@ -29,6 +29,13 @@ module.exports = function(d3) {
         return function(token) {
             var event = d3.dispatch('chosen');
 
+            function filter(d) {
+                if (d.type === 'blob') {
+                    return d.path.match(/json$/);
+                }
+                return true;
+            }
+
             function browse(selection) {
                 req('/user', token, onuser);
 
@@ -53,16 +60,20 @@ module.exports = function(d3) {
                     } else if (d.login) {
                         // organization
                         url = '/orgs/' + d.login + '/repos';
-                    } else if (d.forks) {
+                    } else if (d.forks !== undefined) {
                         // repository
                         url = '/repos/' + d.full_name + '/branches';
+                    } else if (d.type ===  'tree') {
+                        url = '/repos/' + data.path[2].full_name + '/git/trees/' + d.sha;
                     } else if (d.name && d.commit) {
                         // branch
-                        url = '/repos/' + data.path[data.path.length - 1].full_name + '/git/trees/' + d.commit.sha;
+                        url = '/repos/' + data.path[2].full_name + '/git/trees/' + d.commit.sha;
                     }
                     reqList(url, token, onlist);
                     function onlist(err, repos) {
-                        if (repos.length === 1 && repos[0].tree) repos = repos[0].tree;
+                        if (repos.length === 1 && repos[0].tree) {
+                            repos = repos[0].tree.filter(filter);
+                        }
                         data.path.push(d);
                         data.columns = data.columns.concat([repos]);
                         render(data);
@@ -72,10 +83,22 @@ module.exports = function(d3) {
                 var header = selection.append('div')
                     .attr('class', 'header');
 
+                var back = header.append('a')
+                    .attr('class', 'back')
+                    .text('<');
+
                 var breadcrumbs = header.append('div')
                     .attr('class', 'breadcrumbs');
 
                 function render(data) {
+
+                    back.on('click', function(d, i) {
+                        if (data.path.length > 1) {
+                            data.path.pop();
+                            data.columns.pop();
+                            render(data);
+                        }
+                    });
 
                     var crumbs = breadcrumbs
                         .selectAll('a')
@@ -85,14 +108,7 @@ module.exports = function(d3) {
 
                     crumbs.enter()
                         .append('a')
-                        .text(name)
-                        .on('click', function(d, i) {
-                            for (var j = 0; j < (data.path.length - i); j++) {
-                                data.path.pop();
-                                data.columns.pop();
-                            }
-                            render(data);
-                        });
+                        .text(name);
 
                     var columns = selection
                         .selectAll('div.column')
@@ -114,16 +130,64 @@ module.exports = function(d3) {
 
                     var items = columns
                         .selectAll('a.item')
+                        .filter(filter)
                         .data(function(d) { return d; });
                     items.exit().remove();
-                    items.enter()
+                    var newitems = items.enter()
                         .append('a')
                         .attr('class', 'item')
                         .text(name)
                         .on('click', function(d) {
-                            navigateTo(d, data);
+                            if (d.type !== 'blob') navigateTo(d, data);
                         });
+
+                    newitems
+                        .filter(function(d) {
+                            return d.type === 'blob';
+                        })
+                        .each(function(d) {
+                            var parent = d3.select(this);
+                            d3.select(this).append('div')
+                                .attr('class', 'fr')
+                                .each(function(d) {
+                                    var sel = d3.select(this);
+                                    sel.selectAll('button')
+                                        .data([{
+                                            title: 'Preview',
+                                            action: quickpreview(d, parent)
+                                        }, {
+                                            title: 'Open',
+                                            action: choose(d)
+                                        }])
+                                        .enter()
+                                        .append('button')
+                                        .text(function(d) { return d.title; })
+                                        .on('click', function(d) { return d.action(); });
+                                });
+                        });
+
+                    function quickpreview(d, sel) {
+                        return function() {
+                            if (!sel.select('.preview').empty()) {
+                                return sel.select('.preview').remove();
+                            }
+                            var mapcontainer = sel.append('div').attr('class', 'preview');
+                            console.log(d, data.path[2].full_name);
+                            reqRaw('/repos/' + data.path[2].full_name + '/git/blobs/' + d.sha, token, onfile);
+                            function onfile(err, res) {
+                                var previewMap = preview(res, [mapcontainer.node().offsetWidth, 150]);
+                                mapcontainer.node().appendChild(previewMap.node());
+                            }
+                        };
+                    }
+
+                    function choose(d) {
+                        return function() {
+                            event.chosen(d, data);
+                        };
+                    }
                 }
+
                 function name(d) {
                     return d.login || d.name || d.path;
                 }
@@ -219,6 +283,18 @@ module.exports = function(d3) {
             .on('error', function(error) {
                 callback(error, null);
             })
+            .get();
+    }
+
+    function reqRaw(postfix, token, callback) {
+        authorize(d3.json((base + postfix)), token)
+            .on('load', function(data) {
+                callback(null, data);
+            })
+            .on('error', function(error) {
+                callback(error, null);
+            })
+            .header('Accept', 'application/vnd.github.raw')
             .get();
     }
 
