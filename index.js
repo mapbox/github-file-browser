@@ -2,6 +2,7 @@ module.exports = function(d3) {
     var preview = require('static-map-preview')(d3, 'tmcw.map-dsejpecw');
 
     function gitHubBrowse(d3) {
+
         return function(token) {
             var event = d3.dispatch('chosen');
 
@@ -23,7 +24,7 @@ module.exports = function(d3) {
                         }
                         render({
                             columns: [base],
-                            path: [{name:'Users & Organizations'}]
+                            path: [{name:'home'}]
                         });
                     });
                 }
@@ -45,8 +46,10 @@ module.exports = function(d3) {
                         // branch
                         url = '/repos/' + data.path[2].full_name + '/git/trees/' + d.commit.sha;
                     }
+                    selection.classed('loading', true);
                     reqList(url, token, onlist);
                     function onlist(err, repos) {
+                        selection.classed('loading', false);
                         if (repos.length === 1 && repos[0].tree) {
                             repos = repos[0].tree.filter(filter);
                         }
@@ -65,6 +68,12 @@ module.exports = function(d3) {
 
                 var breadcrumbs = header.append('div')
                     .attr('class', 'breadcrumbs');
+
+                var columnsel = selection.append('div')
+                    .attr('class', 'column-wrap');
+
+                var mask = selection.append('div')
+                    .attr('class', 'mask');
 
                 function render(data) {
 
@@ -86,11 +95,14 @@ module.exports = function(d3) {
                         .append('a')
                         .text(name);
 
-                    var columns = selection
+                    var columns = columnsel
                         .selectAll('div.column')
-                        .data(data.columns);
+                        .data(data.columns, function(d, i) {
+                            return i;
+                        });
 
                     columns.exit().remove();
+
                     columns
                         .enter()
                         .append('div')
@@ -115,6 +127,7 @@ module.exports = function(d3) {
                         .text(name)
                         .on('click', function(d) {
                             if (d.type !== 'blob') navigateTo(d, data);
+                            else choose(d)();
                         });
 
                     newitems
@@ -166,6 +179,8 @@ module.exports = function(d3) {
                             event.chosen(d, data);
                         };
                     }
+
+                    selection.node().scrollTop = 0;
                 }
 
                 function name(d) {
