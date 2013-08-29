@@ -151,7 +151,6 @@ module.exports = function(d3) {
                             reqRaw('/repos/' + data.path[2].full_name + '/git/blobs/' + d.sha, token, onfile);
                             function onfile(err, res) {
                                 preview(res, [mapcontainer.node().offsetWidth, 150], function(err, uri) {
-                                    console.log(arguments);
                                     if (err) return;
                                     mapcontainer.append('img')
                                         .attr('width', mapcontainer.node().offsetWidth + 'px')
