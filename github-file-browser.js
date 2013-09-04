@@ -182,7 +182,7 @@ module.exports = function(d3) {
                         };
                     }
 
-                    selection.node().scrollTop = 0;
+                    (selection.node().parentNode || {}).scrollTop = 0;
                 }
 
                 function name(d) {

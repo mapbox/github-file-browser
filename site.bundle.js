@@ -15,7 +15,7 @@ d3.select('.repos').call(browse.gitHubBrowse(token)
         console.log('chosen', arguments);
     }));
 
-},{"d3":2,"./":3}],2:[function(require,module,exports){
+},{"./":2,"d3":3}],3:[function(require,module,exports){
 (function(){require("./d3");
 module.exports = d3;
 (function () { delete this.d3; })(); // unset global
@@ -8832,7 +8832,7 @@ d3 = function() {
   });
   return d3;
 }();
-},{}],3:[function(require,module,exports){
+},{}],2:[function(require,module,exports){
 module.exports = function(d3) {
     var preview = require('static-map-preview')(d3, 'tmcw.map-dsejpecw');
 
@@ -9015,7 +9015,7 @@ module.exports = function(d3) {
                         };
                     }
 
-                    selection.node().scrollTop = 0;
+                    (selection.node().parentNode || {}).scrollTop = 0;
                 }
 
                 function name(d) {
