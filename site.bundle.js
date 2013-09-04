@@ -3,19 +3,19 @@ var d3 = require('d3'),
     browse = require('./')(d3),
     token = localStorage.github_token;
 
-    /*
 d3.select('.browser').call(browse.gistBrowse(token)
+    .on('chosen', function() {
+        console.log('chosen', arguments);
+    }));
+
+    /*
+d3.select('.repos').call(browse.gitHubBrowse(token)
     .on('chosen', function() {
         console.log('chosen', arguments);
     }));
     */
 
-d3.select('.repos').call(browse.gitHubBrowse(token)
-    .on('chosen', function() {
-        console.log('chosen', arguments);
-    }));
-
-},{"./":2,"d3":3}],3:[function(require,module,exports){
+},{"d3":2,"./":3}],2:[function(require,module,exports){
 (function(){require("./d3");
 module.exports = d3;
 (function () { delete this.d3; })(); // unset global
@@ -8832,7 +8832,7 @@ d3 = function() {
   });
   return d3;
 }();
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 module.exports = function(d3) {
     var preview = require('static-map-preview')(d3, 'tmcw.map-dsejpecw');
 
@@ -9050,7 +9050,7 @@ module.exports = function(d3) {
                     var overlay = item.append('div')
                         .attr('class', 'overlay')
                         .text(function(d) {
-                            return d.id + ' | ' + d.description +
+                            return d.id + ' | ' + (d.description || 'untitled') +
                                 ' | ' + time_format(new Date(d.updated_at));
                         });
 

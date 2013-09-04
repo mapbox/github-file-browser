@@ -215,7 +215,7 @@ module.exports = function(d3) {
                     var overlay = item.append('div')
                         .attr('class', 'overlay')
                         .text(function(d) {
-                            return d.id + ' | ' + d.description +
+                            return d.id + ' | ' + (d.description || 'untitled') +
                                 ' | ' + time_format(new Date(d.updated_at));
                         });
 
