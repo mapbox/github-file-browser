@@ -1,6 +1,6 @@
 {
   "name": "github-file-browser",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Browse map files on GitHub and in Gists",
   "main": "index.js",
   "dependencies": {
