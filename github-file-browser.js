@@ -1,11 +1,13 @@
 (function(e){if("function"==typeof bootstrap)bootstrap("githubfilebrowser",e);else if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else if("undefined"!=typeof ses){if(!ses.ok())return;ses.makeGithubFileBrowser=e}else"undefined"!=typeof window?window.githubFileBrowser=e():global.githubFileBrowser=e()})(function(){var define,ses,bootstrap,module,exports;
-return (function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
+return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 module.exports = function(d3) {
     var preview = require('static-map-preview')(d3, 'tmcw.map-dsejpecw');
 
     function gitHubBrowse(d3) {
 
-        return function(token) {
+        return function(token, options) {
+            options = options || {};
+
             var event = d3.dispatch('chosen');
 
             function filter(d) {
@@ -55,6 +57,11 @@ module.exports = function(d3) {
                         if (repos.length === 1 && repos[0].tree) {
                             repos = repos[0].tree.filter(filter);
                         }
+
+                        if (options.sort) {
+                            repos.sort(options.sort);
+                        }
+
                         data.path.push(d);
                         data.columns = data.columns.concat([repos]);
                         render(data);
@@ -195,13 +202,21 @@ module.exports = function(d3) {
     }
 
     function gistBrowse(d3) {
-        return function(token) {
+        return function(token, options) {
+            options = options || {};
+
             var event = d3.dispatch('chosen');
             var time_format = d3.time.format('%Y/%m/%d');
+
             function browse(selection) {
                 var width = Math.min(640, selection.node().offsetWidth);
                 req('/gists', token, function(err, gists) {
                     gists = gists.filter(hasMapFile);
+
+                    if (options.sort) {
+                        gists.sort(options.sort);
+                    }
+
                     var item = selection.selectAll('div.item')
                         .data(gists)
                         .enter()
@@ -238,6 +253,7 @@ module.exports = function(d3) {
                         });
                 });
             }
+
             return d3.rebind(browse, event, 'on');
         };
     }
