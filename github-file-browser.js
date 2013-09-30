@@ -5,7 +5,9 @@ module.exports = function(d3) {
 
     function gitHubBrowse(d3) {
 
-        return function(token) {
+        return function(token, options) {
+            options = options || {};
+
             var event = d3.dispatch('chosen');
 
             function filter(d) {
@@ -55,6 +57,11 @@ module.exports = function(d3) {
                         if (repos.length === 1 && repos[0].tree) {
                             repos = repos[0].tree.filter(filter);
                         }
+
+                        if (options.sort) {
+                            repos.sort(options.sort);
+                        }
+
                         data.path.push(d);
                         data.columns = data.columns.concat([repos]);
                         render(data);
@@ -195,13 +202,21 @@ module.exports = function(d3) {
     }
 
     function gistBrowse(d3) {
-        return function(token) {
+        return function(token, options) {
+            options = options || {};
+
             var event = d3.dispatch('chosen');
             var time_format = d3.time.format('%Y/%m/%d');
+
             function browse(selection) {
                 var width = Math.min(640, selection.node().offsetWidth);
                 req('/gists', token, function(err, gists) {
                     gists = gists.filter(hasMapFile);
+
+                    if (options.sort) {
+                        gists.sort(options.sort);
+                    }
+
                     var item = selection.selectAll('div.item')
                         .data(gists)
                         .enter()
@@ -238,6 +253,7 @@ module.exports = function(d3) {
                         });
                 });
             }
+
             return d3.rebind(browse, event, 'on');
         };
     }
