@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "d3": "~3.2.8",
-    "static-map-preview": "0.1.0"
+    "static-map-preview": "0.1.1"
   },
   "devDependencies": {},
   "scripts": {
