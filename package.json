@@ -4,8 +4,8 @@
   "description": "Browse map files on GitHub and in Gists",
   "main": "index.js",
   "dependencies": {
-    "d3": "~3.2.8",
-    "static-map-preview": "0.1.1"
+    "queue-async": "~1.0.7",
+    "browser-request": "~0.3.1"
   },
   "devDependencies": {},
   "scripts": {

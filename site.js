@@ -1,15 +1,5 @@
-var d3 = require('d3'),
-    browse = require('./')(d3),
-    token = localStorage.github_token;
+var githubbrowser = require('./')('b62b1d055dc3ce744ffbc8da45c7dcc9c05ac5aa');
 
-/*
-d3.select('.browser').call(browse.gistBrowse(token)
-    .on('chosen', function() {
-        console.log('chosen', arguments);
-    }));
-*/
-
-d3.select('.repos').call(browse.gitHubBrowse(token)
-    .on('chosen', function() {
-        console.log('chosen', arguments);
-    }));
+githubbrowser.request('/user/orgs', function(err, res) {
+    console.log(arguments);
+});
