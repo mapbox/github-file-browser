@@ -1,5 +1,13 @@
-var githubbrowser = require('./')('b62b1d055dc3ce744ffbc8da45c7dcc9c05ac5aa');
+var fs = require('fs'),
+    insertCss = require('insert-css');
 
-githubbrowser.request('/user/orgs', function(err, res) {
-    console.log(arguments);
-});
+insertCss(fs.readFileSync('treeui.css'));
+
+var githubbrowser = require('./')(require('./token'));
+
+var container = document.body.appendChild(document.createElement('div'));
+
+githubbrowser.open()
+    .onclick(function(err, res) {
+    })
+    .appendTo(container);
