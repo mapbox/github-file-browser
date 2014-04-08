@@ -17,7 +17,8 @@ function open() {
     return treeui(treeRequest)
         .expandable(function(res) {
             var last = res[res.length - 1];
-            return last.type !== 'blob' && last.type !== 'commit';
+            return last.type !== 'blob' && last.type !== 'commit' &&
+                last.type !== 'new';
         })
         .display(function(res) {
             var last = res[res.length - 1];
@@ -64,6 +65,10 @@ function treeRequest(tree, callback) {
                     r.push([tree[0], tree[1], tree[2], res[i].tree[j]]);
                 }
             }
+            r.push([tree[0], tree[1], tree[2], {
+                type: 'new',
+                name: '+ New File'
+            }]);
             callback(null, r);
         });
     } else if (tree.length > 3) {
@@ -75,6 +80,10 @@ function treeRequest(tree, callback) {
                     r.push(tree.concat([res[i].tree[j]]));
                 }
             }
+            r.push([tree[0], tree[1], tree[2], {
+                type: 'new',
+                name: '+ New File'
+            }]);
             callback(null, r);
         });
     }
