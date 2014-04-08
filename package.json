@@ -5,7 +5,8 @@
   "main": "index.js",
   "dependencies": {
     "queue-async": "~1.0.7",
-    "browser-request": "~0.3.1"
+    "browser-request": "~0.3.1",
+    "treeui": "0.0.0"
   },
   "devDependencies": {
     "insert-css": "~0.1.1",
@@ -14,6 +15,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "beefy site.js -- -t brfs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mapbox/github-file-browser.git"
   },
   "author": "Tom MacWright",
   "license": "BSD"
