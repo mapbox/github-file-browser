@@ -61,7 +61,7 @@ function treeRequest(tree, callback) {
             if (!res.length && res.tree) res = [res];
             for (var i = 0; i < res.length; i++) {
                 for (var j = 0; j < res[i].tree.length; j++) {
-                    r.push([tree[0], tree[1], tree[2], tree[3], res[i].tree[j]]);
+                    r.push([tree[0], tree[1], tree[2], res[i].tree[j]]);
                 }
             }
             callback(null, r);
