@@ -5,8 +5,11 @@ var queue = require('queue-async'),
 
 var base = 'https://api.github.com';
 
-module.exports = function(_) {
+var create = false;
+
+module.exports = function(_, _create) {
     token = _;
+    if (_create !== undefined) create = _create;
     return module.exports;
 };
 
@@ -14,7 +17,8 @@ module.exports.open = open;
 module.exports.request = req;
 
 function open() {
-    return treeui(treeRequest)
+
+    var out = treeui(treeRequest)
         .expandable(function(res) {
             var last = res[res.length - 1];
             return last.type !== 'blob' && last.type !== 'commit' &&
@@ -24,6 +28,8 @@ function open() {
             var last = res[res.length - 1];
             return last.name || last.login || last.path;
         });
+
+    return out;
 }
 
 function treeRequest(tree, callback) {
@@ -65,10 +71,12 @@ function treeRequest(tree, callback) {
                     r.push([tree[0], tree[1], tree[2], res[i].tree[j]]);
                 }
             }
-            r.push([tree[0], tree[1], tree[2], {
-                type: 'new',
-                name: '+ New File'
-            }]);
+            if (create) {
+                r.push([tree[0], tree[1], tree[2], {
+                    type: 'new',
+                    name: '+ New File'
+                }]);
+            }
             callback(null, r);
         });
     } else if (tree.length > 3) {
@@ -80,10 +88,12 @@ function treeRequest(tree, callback) {
                     r.push(tree.concat([res[i].tree[j]]));
                 }
             }
-            r.push([tree[0], tree[1], tree[2], {
-                type: 'new',
-                name: '+ New File'
-            }]);
+            if (create) {
+                r.push([tree[0], tree[1], tree[2], {
+                    type: 'new',
+                    name: '+ New File'
+                }]);
+            }
             callback(null, r);
         });
     }
