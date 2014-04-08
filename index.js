@@ -17,7 +17,7 @@ function open() {
     return treeui(treeRequest)
         .expandable(function(res) {
             var last = res[res.length - 1];
-            return last.type !== 'blob';
+            return last.type !== 'blob' && last.type !== 'commit';
         })
         .display(function(res) {
             var last = res[res.length - 1];
@@ -57,15 +57,25 @@ function treeRequest(tree, callback) {
         });
     } else if (tree.length === 3) {
         req('/repos/' + tree[1].full_name + '/git/trees/' + tree[2].commit.sha, function(err, res) {
-            callback(null, res.tree.map(function(_) {
-                return [tree[0], tree[1], tree[2], _];
-            }));
+            var r = [];
+            if (!res.length && res.tree) res = [res];
+            for (var i = 0; i < res.length; i++) {
+                for (var j = 0; j < res[i].tree.length; j++) {
+                    r.push([tree[0], tree[1], tree[2], tree[3], res[i].tree[j]]);
+                }
+            }
+            callback(null, r);
         });
     } else if (tree.length > 3) {
-        req('/repos/' + tree[1].full_name + '/git/trees/' + tree[3].sha, function(err, res) {
-            callback(null, res.tree.map(function(_) {
-                return [tree[0], tree[1], tree[2], tree[3]].concat([_]);
-            }));
+        req('/repos/' + tree[1].full_name + '/git/trees/' + tree[tree.length - 1].sha, function(err, res) {
+            var r = [];
+            if (!res.length && res.tree) res = [res];
+            for (var i = 0; i < res.length; i++) {
+                for (var j = 0; j < res[i].tree.length; j++) {
+                    r.push(tree.concat([res[i].tree[j]]));
+                }
+            }
+            callback(null, r);
         });
     }
 }
