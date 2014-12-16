@@ -7,9 +7,10 @@ var base = 'https://api.github.com';
 
 var create = false;
 
-module.exports = function(_, _create) {
+module.exports = function(_, _create,endpoint) {
     token = _;
     if (_create !== undefined) create = _create;
+    base = endpoint || base;
     return module.exports;
 };
 
@@ -115,7 +116,7 @@ function req(postfix, callback) {
 
     function page(url, callback) {
         request({
-            uri: url || 'https://api.github.com' + postfix,
+            uri: url || base + postfix,
             headers: {
                 Authorization: 'token ' + token
             },
