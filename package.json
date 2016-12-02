@@ -1,5 +1,5 @@
 {
-  "name": "github-file-browser",
+  "name": "@mapbox/github-file-browser",
   "version": "0.6.1",
   "description": "Browse map files on GitHub and in Gists",
   "main": "index.js",
