@@ -1,25 +1,27 @@
 {
-  "license": "BSD-2-Clause", 
-  "name": "@mapbox/github-file-browser", 
+  "license": "BSD-2-Clause",
+  "name": "@mapbox/github-file-browser",
   "repository": {
-    "url": "git://github.com/mapbox/github-file-browser.git", 
+    "url": "git://github.com/mapbox/github-file-browser.git",
     "type": "git"
-  }, 
-  "author": "Tom MacWright", 
-  "version": "0.6.1", 
+  },
+  "author": "Tom MacWright",
+  "version": "0.6.1",
   "dependencies": {
-    "treeui": "0.1.1", 
-    "queue-async": "~1.0.7", 
-    "browser-request": "~0.3.1"
-  }, 
+    "browser-request": "~0.3.1",
+    "queue-async": "~1.0.7",
+    "token": "^0.1.0",
+    "treeui": "0.1.1"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1", 
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "beefy site.js -- -t brfs"
-  }, 
+  },
   "devDependencies": {
-    "brfs": "~1.0.1", 
-    "insert-css": "~0.1.1"
-  }, 
-  "main": "index.js", 
+    "brfs": "~1.0.1",
+    "insert-css": "~0.1.1",
+    "browserify": "16.2.2"
+  },
+  "main": "index.js",
   "description": "Browse map files on GitHub and in Gists"
 }

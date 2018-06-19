@@ -3,7 +3,7 @@ var fs = require('fs'),
 
 insertCss(fs.readFileSync('treeui.css'));
 
-var githubbrowser = require('./')(require('./token'));
+var githubbrowser = require('./')(require('token'));
 
 var container = document.body.appendChild(document.createElement('div'));
 
