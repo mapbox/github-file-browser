@@ -90,10 +90,10 @@ function treeRequest(tree, callback) {
                 }
             }
             if (create) {
-                r.push([tree[0], tree[1], tree[2], {
+                r.push(tree.concat([{
                     type: 'new',
                     name: '+ New File'
-                }]);
+                }]));
             }
             callback(null, r);
         });
